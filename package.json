@@ -5,11 +5,11 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/illank86/Alfamart-Project.git"
+    "url": "https://git.heroku.com/alfa-mart.git"
   },
   "scripts": {
     "dev": "nodemon src/index.js --exec babel-node --presets es2015,stage-0",
-    "start": "src/index.js --exec babel-node --presets es2015,stage-0"
+    "start": "babel-node src/index.js --presets es2015,stage-0"
   },
   "author": "Nur Ilham Iskandar",
   "license": "MIT",
