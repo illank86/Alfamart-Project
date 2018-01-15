@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Alfamart Backend for IoT",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/illank86/Alfamart-Project.git"
+  },
   "scripts": {
     "dev": "nodemon src/index.js --exec babel-node --presets es2015,stage-0",
     "start": "src/index.js --exec babel-node --presets es2015,stage-0"
