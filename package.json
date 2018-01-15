@@ -1,0 +1,30 @@
+{
+  "name": "alfabackend",
+  "version": "1.0.0",
+  "description": "Alfamart Backend for IoT",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js --exec babel-node --presets es2015,stage-0",
+    "start": "src/index.js --exec babel-node --presets es2015,stage-0"
+  },
+  "author": "Nur Ilham Iskandar",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
+    "express": "^4.16.2",
+    "morgan": "^1.9.0",
+    "mqtt": "^2.15.0",
+    "mysql": "^2.15.0"
+  },
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1"
+  },
+  "engines": {
+    "node": "8.9.3"
+  }
+}
