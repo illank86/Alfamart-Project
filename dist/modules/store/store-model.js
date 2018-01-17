@@ -71,15 +71,17 @@ var dbQuery = {
         var sabtu = req.body.sabtu.day;
         var id_store = req.body.id_store;
         var topic = req.body.topic;
-        var data = [[senin_on, senin_off, senin, id_store], [selasa_on, selasa_off, selasa, id_store], [rabu_on, rabu_off, rabu, id_store], [kamis_on, kamis_off, kamis, id_store], [jumat_on, jumat_off, jumat, id_store], [sabtu_on, sabtu_off, sabtu, id_store], [minggu_on, minggu_off, minggu, id_store]];
+        var komponen = req.body.komponen;
+        var data = [[senin_on, senin_off, senin, komponen, id_store], [selasa_on, selasa_off, selasa, komponen, id_store], [rabu_on, rabu_off, rabu, komponen, id_store], [kamis_on, kamis_off, kamis, komponen, id_store], [jumat_on, jumat_off, jumat, komponen, id_store], [sabtu_on, sabtu_off, sabtu, komponen, id_store], [minggu_on, minggu_off, minggu, komponen, id_store]];
 
         var mqtt = [[senin_on, senin_off], [selasa_on, selasa_off], [rabu_on, rabu_off], [kamis_on, kamis_off], [jumat_on, jumat_off], [sabtu_on, sabtu_off], [minggu_on, minggu_off]];
 
-        console.log(topic);
+        console.log(komponen);
+        console.log(data);
         if (senin_on == '' || senin_off == '' || selasa_on == '' || selasa_off == '' || rabu_on == '' || rabu_off == '' || kamis_on == '' || kamis_off == '' || jumat_on == '' || jumat_off == '' || sabtu_on == '' || sabtu_off == '' || minggu_on == '' || minggu_off == '') {
             res.status(400).json({ "error": "one or more field is empty" });
         } else {
-            _db2.default.query('INSERT INTO schedule (time_on, time_off, day, id_store ) VALUES ?', [data], function (err, result) {
+            _db2.default.query('INSERT INTO schedule (time_on, time_off, day, id_komponen, id_store) VALUES ?', [data], function (err, result) {
                 if (err) {
                     res.status(500).send({ "error": "Internal Server Error" });
                 } else {
@@ -88,7 +90,7 @@ var dbQuery = {
                     for (i = 0; i < mqtt.length; i++) {
                         // let ON = S${i}_on;
                         // let OFF = `S${i}_off`;
-                        dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic);
+                        dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen);
                     }
                 }
             });
@@ -113,7 +115,7 @@ var dbQuery = {
             }
         });
     },
-    sendMqtt: function sendMqtt(i, ton, toff, topic) {
+    sendMqtt: function sendMqtt(i, ton, toff, topic, komp) {
         var arr_on = ton.split(':');
         var hour_on = parseInt(arr_on[0]);
         var min_on = parseInt(arr_on[1]);
@@ -122,9 +124,7 @@ var dbQuery = {
         var min_off = parseInt(arr_off[1]);
         var day = i + 1;
         console.log(day, ton, toff);
-
-        client.publish(topic, '3, 1, ' + day + ', ' + hour_on + ', ' + min_on + ', 00, ' + hour_off + ', ' + min_off + ', 00, 1 ');
-        client.publish(topic, '3, 0, ' + day + ', ' + hour_on + ', ' + min_on + ', 00, ' + hour_off + ', ' + min_off + ', 00, 1 ');
+        client.publish(topic, '3, ' + komp + ', ' + day + ', ' + hour_on + ', ' + min_on + ', 00, ' + hour_off + ', ' + min_off + ', 00, 1 ');
     },
     updateSchedule: function updateSchedule(req, res) {
         var senin_on = req.body.senin.time_on;
@@ -150,6 +150,7 @@ var dbQuery = {
         var sabtu = req.body.sabtu.day;
         var id_store = req.body.id_store;
         var topic = req.body.topic;
+        var komponen = req.body.komponen;
         var data = [senin, senin_on, selasa, selasa_on, rabu, rabu_on, kamis, kamis_on, jumat, jumat_on, sabtu, sabtu_on, minggu, minggu_on, senin, senin_off, selasa, selasa_off, rabu, rabu_off, kamis, kamis_off, jumat, jumat_off, sabtu, sabtu_off, minggu, minggu_off, id_store];
 
         var mqtt = [[senin_on, senin_off], [selasa_on, selasa_off], [rabu_on, rabu_off], [kamis_on, kamis_off], [jumat_on, jumat_off], [sabtu_on, sabtu_off], [minggu_on, minggu_off]];
@@ -168,7 +169,7 @@ var dbQuery = {
                 for (i = 0; i < mqtt.length; i++) {
                     // let ON = S${i}_on;
                     // let OFF = `S${i}_off`;
-                    dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic);
+                    dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen);
                 }
             }
         });
