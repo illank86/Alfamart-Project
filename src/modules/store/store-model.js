@@ -63,15 +63,15 @@ const dbQuery = {
         let sabtu = req.body.sabtu.day;      
         let id_store = req.body.id_store;
         let topic = req.body.topic;
-        let komponen = req.body.komponen
+        let komponen = req.body.komponen;
         let data = [
-            [senin_on, senin_off, senin, id_store, komponen],
-            [selasa_on, selasa_off, selasa, id_store, komponen],
-            [rabu_on, rabu_off, rabu, id_store, komponen],
-            [kamis_on, kamis_off, kamis, id_store, komponen],
-            [jumat_on, jumat_off, jumat, id_store, komponen],
-            [sabtu_on, sabtu_off, sabtu, id_store, komponen],
-            [minggu_on, minggu_off, minggu, id_store, komponen]
+            [senin_on, senin_off, senin, komponen, id_store],
+            [selasa_on, selasa_off, selasa, komponen, id_store],
+            [rabu_on, rabu_off, rabu, komponen, id_store],
+            [kamis_on, kamis_off, kamis, komponen, id_store],
+            [jumat_on, jumat_off, jumat, komponen, id_store],
+            [sabtu_on, sabtu_off, sabtu, komponen, id_store],
+            [minggu_on, minggu_off, minggu, komponen, id_store]
         ];
 
         let mqtt = [
@@ -84,11 +84,12 @@ const dbQuery = {
             [minggu_on, minggu_off],
        ]
 
-        
+       console.log(komponen)
+        console.log(data)
         if(senin_on == '' || senin_off=='' || selasa_on=='' || selasa_off=='' || rabu_on=='' || rabu_off=='' || kamis_on=='' || kamis_off=='' || jumat_on == '' || jumat_off=='' || sabtu_on=='' || sabtu_off =='' || minggu_on=='' || minggu_off=='') {
             res.status(400).json({"error": "one or more field is empty"})
         } else {
-            db.query('INSERT INTO schedule (time_on, time_off, day, id_store, id_komponen ) VALUES ?', [data] , function(err, result) {
+            db.query('INSERT INTO schedule (time_on, time_off, day, id_komponen, id_store) VALUES ?', [data] , function(err, result) {
                 if (err) {
                     res.status(500).send({"error": "Internal Server Error"})
                 } else {
