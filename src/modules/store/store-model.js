@@ -63,14 +63,15 @@ const dbQuery = {
         let sabtu = req.body.sabtu.day;      
         let id_store = req.body.id_store;
         let topic = req.body.topic;
+        let komponen = req.body.komponen
         let data = [
-            [senin_on, senin_off, senin, id_store],
-            [selasa_on, selasa_off, selasa, id_store],
-            [rabu_on, rabu_off, rabu, id_store],
-            [kamis_on, kamis_off, kamis, id_store],
-            [jumat_on, jumat_off, jumat, id_store],
-            [sabtu_on, sabtu_off, sabtu, id_store],
-            [minggu_on, minggu_off, minggu, id_store]
+            [senin_on, senin_off, senin, id_store, komponen],
+            [selasa_on, selasa_off, selasa, id_store, komponen],
+            [rabu_on, rabu_off, rabu, id_store, komponen],
+            [kamis_on, kamis_off, kamis, id_store, komponen],
+            [jumat_on, jumat_off, jumat, id_store, komponen],
+            [sabtu_on, sabtu_off, sabtu, id_store, komponen],
+            [minggu_on, minggu_off, minggu, id_store, komponen]
         ];
 
         let mqtt = [
@@ -83,11 +84,11 @@ const dbQuery = {
             [minggu_on, minggu_off],
        ]
 
-        console.log(topic)
+        
         if(senin_on == '' || senin_off=='' || selasa_on=='' || selasa_off=='' || rabu_on=='' || rabu_off=='' || kamis_on=='' || kamis_off=='' || jumat_on == '' || jumat_off=='' || sabtu_on=='' || sabtu_off =='' || minggu_on=='' || minggu_off=='') {
             res.status(400).json({"error": "one or more field is empty"})
         } else {
-            db.query('INSERT INTO schedule (time_on, time_off, day, id_store ) VALUES ?', [data] , function(err, result) {
+            db.query('INSERT INTO schedule (time_on, time_off, day, id_store, id_komponen ) VALUES ?', [data] , function(err, result) {
                 if (err) {
                     res.status(500).send({"error": "Internal Server Error"})
                 } else {
@@ -96,7 +97,7 @@ const dbQuery = {
                     for(i=0; i < mqtt.length; i++) {
                         // let ON = S${i}_on;
                         // let OFF = `S${i}_off`;
-                        dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic)
+                        dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)
                        
                     }
                 }
@@ -125,7 +126,7 @@ const dbQuery = {
         });
     },
 
-    sendMqtt(i, ton, toff, topic) {        
+    sendMqtt(i, ton, toff, topic, komp) {        
         let arr_on = ton.split(':');
         let hour_on = parseInt(arr_on[0]);
         let min_on = parseInt(arr_on[1]);
@@ -133,11 +134,8 @@ const dbQuery = {
         let hour_off = parseInt(arr_off[0]);
         let min_off = parseInt(arr_off[1]);        
         let day = i+1;
-        console.log(day, ton, toff)
-
-        
-        client.publish(topic, `3, 1, ${day}, ${hour_on}, ${min_on}, 00, ${hour_off}, ${min_off}, 00, 1 `)
-        client.publish(topic, `3, 0, ${day}, ${hour_on}, ${min_on}, 00, ${hour_off}, ${min_off}, 00, 1 `)
+        console.log(day, ton, toff)        
+        client.publish(topic, `3, ${komp}, ${day}, ${hour_on}, ${min_on}, 00, ${hour_off}, ${min_off}, 00, 1 `)       
     },
 
     updateSchedule(req, res) {
@@ -164,6 +162,7 @@ const dbQuery = {
         let sabtu = req.body.sabtu.day;      
         let id_store = req.body.id_store;
         let topic = req.body.topic;
+        let komponen = req.body.komponen
         let data = [
             senin, senin_on,
             selasa, selasa_on,
@@ -225,7 +224,7 @@ const dbQuery = {
                 for(i=0; i < mqtt.length; i++) {
                     // let ON = S${i}_on;
                     // let OFF = `S${i}_off`;
-                    dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic)
+                    dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)
                    
                 }
             }
