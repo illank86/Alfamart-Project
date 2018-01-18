@@ -76,8 +76,6 @@ var dbQuery = {
 
         var mqtt = [[senin_on, senin_off], [selasa_on, selasa_off], [rabu_on, rabu_off], [kamis_on, kamis_off], [jumat_on, jumat_off], [sabtu_on, sabtu_off], [minggu_on, minggu_off]];
 
-        console.log(komponen);
-        console.log(data);
         if (senin_on == '' || senin_off == '' || selasa_on == '' || selasa_off == '' || rabu_on == '' || rabu_off == '' || kamis_on == '' || kamis_off == '' || jumat_on == '' || jumat_off == '' || sabtu_on == '' || sabtu_off == '' || minggu_on == '' || minggu_off == '') {
             res.status(400).json({ "error": "one or more field is empty" });
         } else {
@@ -123,7 +121,6 @@ var dbQuery = {
         var hour_off = parseInt(arr_off[0]);
         var min_off = parseInt(arr_off[1]);
         var day = i + 1;
-        console.log(day, ton, toff);
         client.publish(topic, '3, ' + komp + ', ' + day + ', ' + hour_on + ', ' + min_on + ', 00, ' + hour_off + ', ' + min_off + ', 00, 1 ');
     },
     updateSchedule: function updateSchedule(req, res) {
@@ -157,10 +154,8 @@ var dbQuery = {
 
         var update_query = 'UPDATE schedule\n        SET time_on = (CASE\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            END),\n        time_off = (CASE\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            END)\n        WHERE id_store = ?';
 
-        console.log(topic);
         _db2.default.query(update_query, data, function (err, result) {
             if (err) {
-                console.log(err);
                 res.status(500).send({ "error": "Update Failed, Internal Server Error" });
             } else {
                 res.json({ "message": "schedule updated successfully" });
