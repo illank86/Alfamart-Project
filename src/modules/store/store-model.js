@@ -176,7 +176,8 @@ const dbQuery = {
             jumat, jumat_off,
             sabtu, sabtu_off,
             minggu, minggu_off,
-            id_store
+            id_store,
+            komponen
         ];
 
        let mqtt = [
@@ -208,7 +209,8 @@ const dbQuery = {
             WHEN day = ? THEN ?
             WHEN day = ? THEN ?
             END)
-        WHERE id_store = ?`
+        WHERE id_store = ?
+            AND id_komponen = ?`
         
         db.query(update_query, data, function(err, result) {
             if (err) {
