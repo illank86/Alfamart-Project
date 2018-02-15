@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/illank86/Alfamart-Project"
+    "url": "https://git.heroku.com/glacial-cliffs-13214.git"
   },
   "scripts": {
     "dev": "nodemon src/index.js --exec babel-node --presets es2015,stage-0",
