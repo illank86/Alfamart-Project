@@ -154,20 +154,24 @@ var dbQuery = {
 
         var update_query = 'UPDATE schedule\n        SET time_on = (CASE\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            END),\n        time_off = (CASE\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            WHEN day = ? THEN ?\n            END)\n        WHERE id_store = ?\n            AND id_komponen = ?';
 
-        _db2.default.query(update_query, data, function (err, result) {
-            if (err) {
-                res.status(500).send({ "error": "Update Failed, Internal Server Error" });
-            } else {
-                res.json({ "message": "schedule updated successfully" });
-                // client.publish(dbQuery.getTopic(id_store), 'test mqtt dari node js 123'); 
-                var i = void 0;
-                for (i = 0; i < mqtt.length; i++) {
-                    // let ON = S${i}_on;
-                    // let OFF = `S${i}_off`;
-                    dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen);
+        if (senin_on == '' || senin_off == '' || selasa_on == '' || selasa_off == '' || rabu_on == '' || rabu_off == '' || kamis_on == '' || kamis_off == '' || jumat_on == '' || jumat_off == '' || sabtu_on == '' || sabtu_off == '' || minggu_on == '' || minggu_off == '') {
+            res.status(400).json({ "error": "one or more field is empty" });
+        } else {
+            _db2.default.query(update_query, data, function (err, result) {
+                if (err) {
+                    res.status(500).send({ "error": "Update Failed, Internal Server Error" });
+                } else {
+                    res.json({ "message": "schedule updated successfully" });
+                    // client.publish(dbQuery.getTopic(id_store), 'test mqtt dari node js 123'); 
+                    var i = void 0;
+                    for (i = 0; i < mqtt.length; i++) {
+                        // let ON = S${i}_on;
+                        // let OFF = `S${i}_off`;
+                        dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 };
 

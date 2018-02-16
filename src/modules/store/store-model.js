@@ -134,7 +134,7 @@ const dbQuery = {
         let min_off = parseInt(arr_off[1]);        
         let day = i+1;       
         client.publish(topic, `3, ${komp}, ${day}, ${hour_on}, ${min_on}, 00, ${hour_off}, ${min_off}, 00, 1 `)       
-    },
+    }, 
 
     updateSchedule(req, res) {
         let senin_on = req.body.senin.time_on;
@@ -212,22 +212,25 @@ const dbQuery = {
         WHERE id_store = ?
             AND id_komponen = ?`
         
-        db.query(update_query, data, function(err, result) {
-            if (err) {
-                res.status(500).send({"error": "Update Failed, Internal Server Error"})
-            } else {
-                res.json({"message": "schedule updated successfully"});
-                // client.publish(dbQuery.getTopic(id_store), 'test mqtt dari node js 123'); 
-                let i;
-                for(i=0; i < mqtt.length; i++) {
-                    // let ON = S${i}_on;
-                    // let OFF = `S${i}_off`;
-                    dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)
-                   
+        if(senin_on == '' || senin_off=='' || selasa_on=='' || selasa_off=='' || rabu_on=='' || rabu_off=='' || kamis_on=='' || kamis_off=='' || jumat_on == '' || jumat_off=='' || sabtu_on=='' || sabtu_off =='' || minggu_on=='' || minggu_off=='') {
+            res.status(400).json({"error": "one or more field is empty"})
+        } else {        
+            db.query(update_query, data, function(err, result) {
+                if (err) {
+                    res.status(500).send({"error": "Update Failed, Internal Server Error"})
+                } else {
+                    res.json({"message": "schedule updated successfully"});
+                    // client.publish(dbQuery.getTopic(id_store), 'test mqtt dari node js 123'); 
+                    let i;
+                    for(i=0; i < mqtt.length; i++) {
+                        // let ON = S${i}_on;
+                        // let OFF = `S${i}_off`;
+                        dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)
+                    
+                    }
                 }
-            }
-        }); 
- 
+            }); 
+        }
        
     },
 
