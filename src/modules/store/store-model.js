@@ -16,7 +16,7 @@ const dbQuery = {
     },
 
     getOne(req, res) {
-        db.query('Select * FROM store WHERE id_store = ?', (req.params._id), function(err, result) {            
+        db.query('SELECT * FROM store WHERE id_store = ?', (req.params._id), function(err, result) {            
             if (err) {
                 res.status(500).send({"error": "Internal Server Error"})
             } else {
