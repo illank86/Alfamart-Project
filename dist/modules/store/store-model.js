@@ -27,7 +27,7 @@ var dbQuery = {
         });
     },
     getOne: function getOne(req, res) {
-        _db2.default.query('Select * FROM store WHERE id_store = ?', req.params._id, function (err, result) {
+        _db2.default.query('SELECT * FROM store WHERE id_store = ?', req.params._id, function (err, result) {
             if (err) {
                 res.status(500).send({ "error": "Internal Server Error" });
             } else {

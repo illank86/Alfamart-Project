@@ -11,8 +11,8 @@ var defaultConfig = {
 };
 
 var config = {
-    DB_URL: '...',
-    DB_PASS: '....'
+    DB_URL: 'us-cdbr-iron-east-05.cleardb.net',
+    DB_PASS: '714c3527'
 };
 
 exports.default = _extends({}, defaultConfig, config);
