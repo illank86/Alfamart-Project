@@ -4,9 +4,9 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _mqtt = require('mqtt');
+var _moment = require('moment');
 
-var _mqtt2 = _interopRequireDefault(_mqtt);
+var _moment2 = _interopRequireDefault(_moment);
 
 var _db = require('../../config/db');
 
@@ -17,8 +17,6 @@ var _constants = require('../../config/constants');
 var _constants2 = _interopRequireDefault(_constants);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var client = _mqtt2.default.connect('tcp://127.0.0.1');
 
 var dbQuery = {
     getAll: function getAll(req, res) {
@@ -43,6 +41,7 @@ var dbQuery = {
         var name = req.body.name;
         var address = req.body.address;
         var topic = req.body.topic;
+        var totalSubscriber = void 0;
         _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
             if (err) {
                 res.status(500).send({ "error": "Cannot save data. Internal Server Error" });
@@ -122,12 +121,45 @@ var dbQuery = {
         });
     },
     getOneStore: function getOneStore(req, res) {
-        _db2.default.query('Select * FROM schedule WHERE id_store = ?', req.params._id, function (err, result) {
+        _db2.default.query('SELECT * FROM schedule WHERE id_store = ?', req.params._id, function (err, result) {
             if (err) {
                 res.status(500).send({ "error": "Cannot get store data, Internal Server Error" });
             } else {
                 res.send(result);
             }
+        });
+    },
+    selectIdStore: function selectIdStore(topics, clb) {
+        var str = topics;
+        var data_topic = str.split('/')[2];
+        _db2.default.query('SELECT id_store FROM store WHERE topic = ?', data_topic, function (err, result) {
+            if (err) {
+                throw err;
+            } else {
+                clb(result[0].id_store);
+            }
+        });
+    },
+    insertMqttMessage: function insertMqttMessage(topics, msg) {
+        var str = topics;
+        var topic = str.split('/')[2].toString();
+        msg = msg.toString().split(',');
+        var timestamps = (0, _moment2.default)(new Date()).format("YYYY-MM-DD HH:mm:ss").toString();
+        var status_3phase = parseInt(msg[0]);
+        var status_1phase = parseInt(msg[1]);
+        var status_auto_manual = parseInt(msg[2]);
+        var current_r = parseFloat(msg[3]);
+        var current_s = parseFloat(msg[4]);
+        var current_t = parseFloat(msg[5]);
+        var current_sng = parseFloat(msg[6]);
+
+        dbQuery.selectIdStore(topics, function (res) {
+            var stores = res;
+            _db2.default.query('INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function (err, result) {
+                if (err) {
+                    throw err;
+                }
+            });
         });
     },
     sendMqtt: function sendMqtt(i, ton, toff, topic, komp) {
@@ -151,15 +183,12 @@ var dbQuery = {
     },
     mqttOnMessage: function mqttOnMessage() {
         _constants2.default.client.on('message', function (topic, message) {
-            console.log(topic);
-            console.log(message.toString());
-            client.end();
+            dbQuery.insertMqttMessage(topic, message);
         });
     },
     subscribeOnStart: function subscribeOnStart() {
         _constants2.default.client.on('connect', function () {
-            console.log('Connected to MQTTs');
-            var allMqtt = [];
+            var allMqtt = ['alfamart/status/@!firstTest01!/info'];
             var i = void 0;
 
             dbQuery.queryAllMqtt(function (data) {
@@ -168,14 +197,12 @@ var dbQuery = {
                 }
 
                 if (allMqtt.length === 0) {
-                    console.log('Topic are empty');
+                    return null;
                 } else {
                     _constants2.default.client.subscribe(allMqtt, function (err, granted) {
                         if (err) {
-                            console.log("error subscribe ", err);
                             _constants2.default.client.end();
                         } else {
-                            console.log("Success Subscribed to All Mqtt ", granted);
                             dbQuery.mqttOnMessage();
                         }
                     });
@@ -189,7 +216,6 @@ var dbQuery = {
                 clb('error');
             } else {
                 clb(granted);
-                console.log(granted);
             }
         });
     },
@@ -241,11 +267,8 @@ var dbQuery = {
                     res.status(500).send({ "error": "Update Failed, Internal Server Error" });
                 } else {
                     res.json({ "message": "schedule updated successfully" });
-                    // client.publish(dbQuery.getTopic(id_store), 'test mqtt dari node js 123'); 
                     var i = void 0;
                     for (i = 0; i < mqtt.length; i++) {
-                        // let ON = S${i}_on;
-                        // let OFF = `S${i}_off`;
                         dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen);
                     }
                 }
