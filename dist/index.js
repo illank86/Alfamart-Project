@@ -16,12 +16,16 @@ var _index = require('./modules/index');
 
 var _index2 = _interopRequireDefault(_index);
 
+var _storeModel = require('./modules/store/store-model');
+
+var _storeModel2 = _interopRequireDefault(_storeModel);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var app = (0, _express2.default)();
-
 (0, _middleware2.default)(app);
 
+_storeModel2.default.subscribeOnStart();
 app.use('/api', _index2.default);
 
 app.listen(_constants2.default.PORT, function (err) {

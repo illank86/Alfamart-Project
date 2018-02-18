@@ -21,7 +21,7 @@ var routes = new _express.Router();
 routes.get('/stores', _storeModel2.default.getAll);
 routes.get('/store/:_id', _storeModel2.default.getOne);
 routes.post('/add-store', _storeModel2.default.addStore);
-routes.delete('/delete-store/:_id', _storeModel2.default.deleteOne);
+routes.delete('/delete-store/:_id/:topic', _storeModel2.default.deleteOne);
 routes.post('/add-schedule', _storeModel2.default.addSchedule);
 routes.get('/get-schedule/:_id', _storeModel2.default.getOneStore);
 routes.put('/update-schedule/:_id', _storeModel2.default.updateSchedule);
