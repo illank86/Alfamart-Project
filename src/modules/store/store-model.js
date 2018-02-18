@@ -1,5 +1,6 @@
 import mqtt from 'mqtt';
 import db from '../../config/db';
+import constants from '../../config/constants';
 
 const client = mqtt.connect('tcp://127.0.0.1');
 
@@ -33,8 +34,14 @@ const dbQuery = {
             if (err) {                
                 res.status(500).send({ "error": "Cannot save data. Internal Server Error"});
             } else {
-                res.send({"message": "store data saved"});                
-            }
+                dbQuery.subscribeMqtt(topic, function(msg) {
+                    if(msg == 'error') {
+                        res.send({"message": "store data saved but cannot subscribed"}); 
+                    } else {            
+                        res.send({"message": "store data saved and subscribed"});
+                    }
+                });       
+            };
         });
     },
 
@@ -106,11 +113,18 @@ const dbQuery = {
 
     deleteOne(req, res) {
         let id = req.params._id;
+        let topic = req.params.topic;
         db.query('DELETE FROM store WHERE id_store = ?', (id), function(err, result) {
             if(err) {
                 res.status(500).send({"error": "Cannot delete, Internal Server Error"})
-            } else {
-                res.json({"message": "store deleted"})
+            } else { 
+                dbQuery.unsubscribeMqtt(topic, function(msg) {
+                    if(msg == 'error') {
+                        res.json({"message": "store deleted but cannot unsubscribe"})
+                    } else {
+                        res.json({"message": "store deleted and unsubscribed successfully"})
+                    }
+                });   
             }
         });
     },
@@ -133,8 +147,75 @@ const dbQuery = {
         let hour_off = parseInt(arr_off[0]);
         let min_off = parseInt(arr_off[1]);        
         let day = i+1;       
-        client.publish(topic, `3, ${komp}, ${day}, ${hour_on}, ${min_on}, 00, ${hour_off}, ${min_off}, 00, 1 `)       
+        constants.client.publish(`alfamart/relay/${topic}/command, 3, ${komp}, ${day}, ${hour_on}, ${min_on}, 00, ${hour_off}, ${min_off}, 00, 1 `)       
     }, 
+
+    queryAllMqtt(clb) {
+        db.query('SELECT topic FROM store', function(err, result) {            
+            if (err) {
+                return({"error": "Internal Server Error"})
+            } else {
+                clb(result); 
+            }                       
+        });
+    },
+
+    mqttOnMessage() {
+        constants.client.on('message', function(topic, message) {
+            console.log(topic);
+            console.log(message.toString());
+            client.end();
+        });
+    },
+
+    subscribeOnStart() {
+        constants.client.on('connect', function() {
+            console.log('Connected to MQTTs');
+            let allMqtt = [];
+            let i;
+
+            dbQuery.queryAllMqtt(function(data) {
+                for(i = 0; i < data.length; i++ ) {
+                    allMqtt.push(`alfamart/status/${data[i].topic}/info`);
+                }  
+
+                if(allMqtt.length === 0) {
+                    console.log('Topic are empty');
+                } else {
+                    constants.client.subscribe(allMqtt, function(err, granted) {
+                        if(err) {
+                            console.log("error subscribe ", err);
+                            constants.client.end();                        
+                        } else {
+                            console.log("Success Subscribed to All Mqtt ", granted); 
+                            dbQuery.mqttOnMessage();                       
+                        }
+                    });
+                }
+            });
+        });
+    },
+
+    subscribeMqtt(topic, clb) {       
+        constants.client.subscribe(`alfamart/status/${topic}/info`, function(err, granted) {
+            if(err) {
+                clb('error');
+            } else {
+                clb(granted);
+                console.log(granted)
+            }
+        });            
+    },
+
+    unsubscribeMqtt(topic, clb) {
+        constants.client.unsubscribe(`alfamart/status/${topic}/info`, function(err, granted) {
+            if(err) {
+                clb('error');
+            } else {
+                clb('granted');
+            }
+        });
+    },
 
     updateSchedule(req, res) {
         let senin_on = req.body.senin.time_on;
