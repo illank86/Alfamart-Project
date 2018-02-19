@@ -11,16 +11,16 @@ const config = {
 //
 const options = {
     option: {        
-        port: 15752,
-        host: 'mqtt://m13.cloudmqtt.com',
+        port: 1883,
+        host: 'mqtt://broker.hivemq.com',
         clientId: 'mqttjs_'+ Math.random().toString(16).substr(2, 8),
-        username: 'joywydem',
-        password: 'f1A0bkvykCrl',
+        // username: 'joywydem',
+        // password: 'f1A0bkvykCrl',
         keepalive: 30,
         reconnectPeriod: 3000,
         reschedulePings: true,
-        protocolId: 'MQIsdp',
-        protocolVersion: 3,
+        protocolId: 'MQTT',
+        protocolVersion: 4,
         connectTimeout: 30 * 1000,
         clean: true,
         encoding: 'utf8',
@@ -29,7 +29,7 @@ const options = {
 }
 
 const conn = {
-    client: mqtt.connect('mqtt://m13.cloudmqtt.com', options.option)
+    client: mqtt.connect('mqtt://broker.hivemq.com', options.option)
 }
 
 

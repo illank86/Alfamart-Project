@@ -25,5 +25,6 @@ routes.delete('/delete-store/:_id/:topic', _storeModel2.default.deleteOne);
 routes.post('/add-schedule', _storeModel2.default.addSchedule);
 routes.get('/get-schedule/:_id', _storeModel2.default.getOneStore);
 routes.put('/update-schedule/:_id', _storeModel2.default.updateSchedule);
+routes.get('/get-report/:_id', _storeModel2.default.getOneReport);
 
 exports.default = routes;

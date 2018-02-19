@@ -1,5 +1,9 @@
 'use strict';
 
+var _cluster = require('cluster');
+
+var _cluster2 = _interopRequireDefault(_cluster);
+
 var _express = require('express');
 
 var _express2 = _interopRequireDefault(_express);
@@ -22,15 +26,36 @@ var _storeModel2 = _interopRequireDefault(_storeModel);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var app = (0, _express2.default)();
-(0, _middleware2.default)(app);
+if (_cluster2.default.isMaster) {
 
-_storeModel2.default.subscribeOnStart();
-app.use('/api', _index2.default);
+    var cpuCount = require('os').cpus().length;
 
-app.listen(_constants2.default.PORT, function (err) {
-    if (err) {
+    for (var i = 0; i < cpuCount; i++) {
+        _cluster2.default.fork();
+    };
+
+    _cluster2.default.on('exit', function (worker) {
+
+        // Replace the dead worker,
+        console.log('Worker %d died :(', worker.id);
+        _cluster2.default.fork();
+    });
+} else {
+
+    var app = (0, _express2.default)();
+    (0, _middleware2.default)(app);
+
+    _constants2.default.client.on('error', function (err) {
         console.log(err);
-    }
-    console.log("Server is running at " + _constants2.default.PORT);
-});
+    });
+    _storeModel2.default.subscribeOnStart();
+    app.use('/api', _index2.default);
+
+    app.listen(_constants2.default.PORT, function (err) {
+        if (err) {
+            console.log(err);
+        }
+        console.log("Server is running at " + _constants2.default.PORT);
+        console.log('Worker %d running!', _cluster2.default.worker.id);
+    });
+}

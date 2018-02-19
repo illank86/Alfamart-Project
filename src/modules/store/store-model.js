@@ -27,8 +27,7 @@ const dbQuery = {
     addStore(req, res) {
         let name = req.body.name;
         let address = req.body.address;   
-        let topic = req.body.topic;  
-        let totalSubscriber;      
+        let topic = req.body.topic;     
         db.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function(err, result) {
             if (err) {                
                 res.status(500).send({ "error": "Cannot save data. Internal Server Error"});
@@ -100,8 +99,6 @@ const dbQuery = {
                     res.json({"message": "schedule saved successfully"});
                     let i;
                     for(i=0; i < mqtt.length; i++) {
-                        // let ON = S${i}_on;
-                        // let OFF = `S${i}_off`;
                         dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)
                        
                     }
@@ -138,6 +135,15 @@ const dbQuery = {
         });
     },
 
+    getOneReport(req, res) {
+        db.query('SELECT * FROM report WHERE id_store = ?', (req.params._id), function(err, result) {            
+            if (err) {
+                res.status(500).send({"error": "Cannot get report data, Internal Server Error"});
+            } else {
+                res.send(result);
+            }
+        });
+    },
 
     selectIdStore(topics, clb) {
         let str = topics;
@@ -152,9 +158,9 @@ const dbQuery = {
     },
 
     insertMqttMessage(topics, msg) {
-        let str = topics;
-        let topic = str.split('/')[2].toString(); 
-        msg = msg.toString().split(',');  
+        let str = topics.toString();
+        let topic = str.split('/')[2];        
+        msg = msg.toString().split(',');         
         let timestamps = moment(new Date()).format("YYYY-MM-DD HH:mm:ss").toString();
         let status_3phase = parseInt(msg[0]);
         let status_1phase = parseInt(msg[1]);
@@ -168,7 +174,7 @@ const dbQuery = {
             let stores = res;              
             db.query('INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function(err, result) {
                 if(err) {
-                    throw err
+                    return({"error": err});                    
                 } 
             });
         });  
@@ -202,9 +208,9 @@ const dbQuery = {
     },
 
     subscribeOnStart() {
-        constants.client.on('connect', function() {
-            let allMqtt = ['alfamart/status/@!firstTest01!/info'];
-            let i;
+       constants.client.on('connect', function() {
+            let allMqtt = [];
+            let i;           
 
             dbQuery.queryAllMqtt(function(data) {
                 for(i = 0; i < data.length; i++ ) {
@@ -217,7 +223,8 @@ const dbQuery = {
                     constants.client.subscribe(allMqtt, function(err, granted) {
                         if(err) {                            
                             constants.client.end();                        
-                        } else {                          
+                        } else {     
+                            console.log('Connect to MQTT :', allMqtt)                     
                             dbQuery.mqttOnMessage();                       
                         }
                     });

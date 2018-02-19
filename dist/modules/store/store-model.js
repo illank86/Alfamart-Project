@@ -41,7 +41,6 @@ var dbQuery = {
         var name = req.body.name;
         var address = req.body.address;
         var topic = req.body.topic;
-        var totalSubscriber = void 0;
         _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
             if (err) {
                 res.status(500).send({ "error": "Cannot save data. Internal Server Error" });
@@ -95,8 +94,6 @@ var dbQuery = {
                     res.json({ "message": "schedule saved successfully" });
                     var i = void 0;
                     for (i = 0; i < mqtt.length; i++) {
-                        // let ON = S${i}_on;
-                        // let OFF = `S${i}_off`;
                         dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen);
                     }
                 }
@@ -129,6 +126,15 @@ var dbQuery = {
             }
         });
     },
+    getOneReport: function getOneReport(req, res) {
+        _db2.default.query('SELECT * FROM report WHERE id_store = ?', req.params._id, function (err, result) {
+            if (err) {
+                res.status(500).send({ "error": "Cannot get report data, Internal Server Error" });
+            } else {
+                res.send(result);
+            }
+        });
+    },
     selectIdStore: function selectIdStore(topics, clb) {
         var str = topics;
         var data_topic = str.split('/')[2];
@@ -141,8 +147,8 @@ var dbQuery = {
         });
     },
     insertMqttMessage: function insertMqttMessage(topics, msg) {
-        var str = topics;
-        var topic = str.split('/')[2].toString();
+        var str = topics.toString();
+        var topic = str.split('/')[2];
         msg = msg.toString().split(',');
         var timestamps = (0, _moment2.default)(new Date()).format("YYYY-MM-DD HH:mm:ss").toString();
         var status_3phase = parseInt(msg[0]);
@@ -157,7 +163,7 @@ var dbQuery = {
             var stores = res;
             _db2.default.query('INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function (err, result) {
                 if (err) {
-                    throw err;
+                    return { "error": err };
                 }
             });
         });
@@ -188,7 +194,7 @@ var dbQuery = {
     },
     subscribeOnStart: function subscribeOnStart() {
         _constants2.default.client.on('connect', function () {
-            var allMqtt = ['alfamart/status/@!firstTest01!/info'];
+            var allMqtt = [];
             var i = void 0;
 
             dbQuery.queryAllMqtt(function (data) {
@@ -203,6 +209,7 @@ var dbQuery = {
                         if (err) {
                             _constants2.default.client.end();
                         } else {
+                            console.log('Connect to MQTT :', allMqtt);
                             dbQuery.mqttOnMessage();
                         }
                     });
