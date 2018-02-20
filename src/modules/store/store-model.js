@@ -1,12 +1,14 @@
 import moment from 'moment';
 import db from '../../config/db';
 import constants from '../../config/constants';
+import logger from '../../config/logger';
 
 const dbQuery = {
 
     getAll(req, res) {
         db.query('SELECT * FROM store', function(err, result) {            
             if (err) {
+                logger.error('Internal Server Error');
                 res.status(500).send({"error": "Internal Server Error"})
             } else {
                 res.send(result); 
@@ -29,16 +31,18 @@ const dbQuery = {
         let address = req.body.address;   
         let topic = req.body.topic;     
         db.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function(err, result) {
-            if (err) {                
-                res.status(500).send({ "error": "Cannot save data. Internal Server Error"});
+            if (err) { 
+                logger.error(`Query addStore function has an error: ${err}`);               
+                res.status(500).send({ "error": `${err}`});
             } else {
-                dbQuery.subscribeMqtt(topic, function(msg) {
-                    if(msg == 'error') {
-                        res.send({"message": "store data saved but cannot subscribed"}); 
-                    } else { 
-                        res.send({"message": "store data saved and subscribed"});
+                constants.client.subscribe(`alfamart/status/${topic}/info`, { qos: 2 }, function(err, granted) {
+                    if(err) {
+                        logger.error(`Subsribed at addStore function has an error: ${err}`);
+                        res.send({"message": "Store data saved but cannot subscribed"}); 
+                    } else {                       
+                        res.send({"message": `Store data saved and subscribed to ${granted[0].topic}`});
                     }
-                });       
+                });                 
             };
         });
     },
@@ -94,9 +98,10 @@ const dbQuery = {
         } else {
             db.query('INSERT INTO schedule (time_on, time_off, day, id_komponen, id_store) VALUES ?', [data] , function(err, result) {
                 if (err) {
+                    logger.error(`Query addSchedule function has an error: ${err}`);
                     res.status(500).send({"error": "Internal Server Error"})
                 } else {
-                    res.json({"message": "schedule saved successfully"});
+                    res.json({"message": "Schedule saved successfully"});
                     let i;
                     for(i=0; i < mqtt.length; i++) {
                         dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)
@@ -112,13 +117,14 @@ const dbQuery = {
         let topic = req.params.topic;
         db.query('DELETE FROM store WHERE id_store = ?', (id), function(err, result) {
             if(err) {
+                logger.error(`Query deleteOne function has an error: ${err}`);
                 res.status(500).send({"error": "Cannot delete, Internal Server Error"})
             } else { 
                 dbQuery.unsubscribeMqtt(topic, function(msg) {
                     if(msg == 'error') {
-                        res.json({"message": "store deleted but cannot unsubscribe"})
+                        res.json({"message": "Store deleted but cannot unsubscribe"})
                     } else {
-                        res.json({"message": "store deleted and unsubscribed successfully"})
+                        res.json({"message": `Deleted and unsubscribed from ${topic}`})
                     }
                 });   
             }
@@ -128,7 +134,8 @@ const dbQuery = {
     getOneStore(req, res) {
         db.query('SELECT * FROM schedule WHERE id_store = ?', (req.params._id), function(err, result) {            
             if (err) {
-                res.status(500).send({"error": "Cannot get store data, Internal Server Error"});
+                logger.error(`Query getOneStore function has an error: ${err}`);
+                res.status(500).send({"error": `Cannot get store data, ${err}`});
             } else {
                 res.send(result);
             }
@@ -136,9 +143,10 @@ const dbQuery = {
     },
 
     getOneReport(req, res) {
-        db.query('SELECT * FROM report WHERE id_store = ?', (req.params._id), function(err, result) {            
+        db.query('SELECT * FROM report WHERE id_store = ? ORDER BY timestamp DESC LIMIT 1', (req.params._id), function(err, result) {            
             if (err) {
-                res.status(500).send({"error": "Cannot get report data, Internal Server Error"});
+                logger.error(`Query getOneReport function has an error: ${err}`);
+                res.status(500).send({"error": `Cannot get report data, ${err}`});
             } else {
                 res.send(result);
             }
@@ -150,7 +158,7 @@ const dbQuery = {
         let data_topic = str.split('/')[2];  
         db.query('SELECT id_store FROM store WHERE topic = ?', (data_topic), function(err, result) {
             if (err) {
-                throw err;
+                logger.error(`Query selectIdStore function has an error: ${err}`);
             } else {                
                 clb(result[0].id_store);
             }
@@ -168,14 +176,18 @@ const dbQuery = {
         let current_r = parseFloat(msg[3]);
         let current_s = parseFloat(msg[4]);
         let current_t = parseFloat(msg[5]); 
-        let current_sng = parseFloat(msg[6]);  
+        let current_sng = parseFloat(msg[6]); 
+        
+      
 
         dbQuery.selectIdStore(topics, function(res) { 
-            let stores = res;              
-            db.query('INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function(err, result) {
+            let stores = res;                          
+            let query = `INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+            db.query(query, [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function(err, result) {
                 if(err) {
-                    return({"error": err});                    
-                } 
+                    logger.error(`Query selectIdStore has an error: ${err}`);
+                }             
             });
         });  
     },
@@ -194,7 +206,7 @@ const dbQuery = {
     queryAllMqtt(clb) {
         db.query('SELECT topic FROM store', function(err, result) {            
             if (err) {
-                return({"error": "Internal Server Error"})
+                logger.error(`Query queryAllMqtt has an error: ${err}`);
             } else {
                 clb(result); 
             }                       
@@ -202,15 +214,17 @@ const dbQuery = {
     },
 
     mqttOnMessage() {
-        constants.client.on('message', function(topic, message) {        
+        constants.client.on('message', function(topic, message) {
             dbQuery.insertMqttMessage(topic, message);            
         });
     },
 
     subscribeOnStart() {
        constants.client.on('connect', function() {
-            let allMqtt = [];
-            let i;           
+            let allMqtt = ['yes@test123'];
+            let i;  
+            
+            dbQuery.mqttOnMessage(); 
 
             dbQuery.queryAllMqtt(function(data) {
                 for(i = 0; i < data.length; i++ ) {
@@ -220,12 +234,11 @@ const dbQuery = {
                 if(allMqtt.length === 0) {
                     return null;
                 } else {
-                    constants.client.subscribe(allMqtt, function(err, granted) {
+                    constants.client.subscribe(allMqtt, { qos: 2 }, function(err, granted) {
                         if(err) {                            
-                            constants.client.end();                        
+                            logger.error(err)                       
                         } else {     
-                            console.log('Connect to MQTT :', allMqtt)                     
-                            dbQuery.mqttOnMessage();                       
+                            logger.info(`Subscribe to all topics: ${allMqtt}`);                            
                         }
                     });
                 }
@@ -233,22 +246,12 @@ const dbQuery = {
         });
     },
 
-    subscribeMqtt(topic, clb) {       
-        constants.client.subscribe(`alfamart/status/${topic}/info`, function(err, granted) {
-            if(err) {
-                clb('error');
-            } else {
-                clb(granted);
-            }
-        });            
-    },
-
     unsubscribeMqtt(topic, clb) {
         constants.client.unsubscribe(`alfamart/status/${topic}/info`, function(err, granted) {
             if(err) {
                 clb('error');
             } else {
-                clb('granted');
+                clb(granted);
             }
         });
     },
@@ -330,13 +333,14 @@ const dbQuery = {
             AND id_komponen = ?`
         
         if(senin_on == '' || senin_off=='' || selasa_on=='' || selasa_off=='' || rabu_on=='' || rabu_off=='' || kamis_on=='' || kamis_off=='' || jumat_on == '' || jumat_off=='' || sabtu_on=='' || sabtu_off =='' || minggu_on=='' || minggu_off=='') {
-            res.status(400).json({"error": "one or more field is empty"})
+            res.status(400).json({"error": "One or more field is empty"})
         } else {        
             db.query(update_query, data, function(err, result) {
                 if (err) {
-                    res.status(500).send({"error": "Update Failed, Internal Server Error"})
+                    logger.error(`Query updateSchedule function has an error: ${err}`);
+                    res.status(500).send({"error": `Update failed, ${err}`})
                 } else {
-                    res.json({"message": "schedule updated successfully"});
+                    res.json({"message": "Schedules updated successfully"});
                     let i;
                     for(i=0; i < mqtt.length; i++) {
                         dbQuery.sendMqtt(i, mqtt[i][0], mqtt[i][1], topic, komponen)

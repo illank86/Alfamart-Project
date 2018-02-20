@@ -12,6 +12,10 @@ var _middleware = require('./config/middleware');
 
 var _middleware2 = _interopRequireDefault(_middleware);
 
+var _logger = require('./config/logger');
+
+var _logger2 = _interopRequireDefault(_logger);
+
 var _constants = require('./config/constants');
 
 var _constants2 = _interopRequireDefault(_constants);
@@ -31,31 +35,30 @@ if (_cluster2.default.isMaster) {
     var cpuCount = require('os').cpus().length;
 
     for (var i = 0; i < cpuCount; i++) {
-        _cluster2.default.fork();
+        var worker = _cluster2.default.fork();
     };
 
+    worker.send({ RunSubs: 'Run Subs' });
     _cluster2.default.on('exit', function (worker) {
-
         // Replace the dead worker,
-        console.log('Worker %d died :(', worker.id);
-        _cluster2.default.fork();
+        worker;
     });
 } else {
 
     var app = (0, _express2.default)();
     (0, _middleware2.default)(app);
 
-    _constants2.default.client.on('error', function (err) {
-        console.log(err);
-    });
-    _storeModel2.default.subscribeOnStart();
-    app.use('/api', _index2.default);
+    _logger2.default;
 
+    process.on('message', function (msg) {
+        _storeModel2.default.subscribeOnStart();
+    });
+
+    app.use('/api', _index2.default);
     app.listen(_constants2.default.PORT, function (err) {
         if (err) {
-            console.log(err);
+            _logger2.default.err(err);
         }
-        console.log("Server is running at " + _constants2.default.PORT);
-        console.log('Worker %d running!', _cluster2.default.worker.id);
+        _logger2.default.info('Server Running on PORT ' + _constants2.default.PORT);
     });
 }

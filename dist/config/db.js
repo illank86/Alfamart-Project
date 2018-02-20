@@ -16,9 +16,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var db = _mysql2.default.createPool({
     host: _constants2.default.DB_URL,
-    user: 'b076b71a586ce1',
+    user: process.env.DB_USERNAME || 'root',
     password: _constants2.default.DB_PASS,
-    database: 'heroku_4b747e7cb16ae71'
+    database: process.env.DB_NAME || 'alfamart'
 });
 
 exports.default = db;

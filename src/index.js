@@ -3,6 +3,7 @@ import express from 'express';
 
 import middleware from './config/middleware';
 
+import logger from './config/logger';
 import constants from './config/constants';
 import Routes from './modules/index';
 import dbQuery from './modules/store/store-model';
@@ -12,35 +13,33 @@ if(cluster.isMaster) {
     const cpuCount = require('os').cpus().length;
 
     for (let i = 0; i < cpuCount; i++) {
-        cluster.fork();
+        var worker = cluster.fork(); 
+           
     };
 
+    worker.send({RunSubs: 'Run Subs'}); 
     cluster.on('exit', function (worker) {
-
         // Replace the dead worker,
-        console.log('Worker %d died :(', worker.id);
-        cluster.fork();
-    
+        worker;        
     });
 
 } else {  
 
     const app = express();
-    middleware(app);
+    middleware(app); 
 
-    constants.client.on('error', function(err) {
-        console.log(err)
-    })
-    dbQuery.subscribeOnStart();
+    logger;
+    
+    process.on('message',  function(msg) {
+        dbQuery.subscribeOnStart();
+    });
+
     app.use('/api', Routes);
-
-
     app.listen(constants.PORT, function(err) {
         if (err) {
-            console.log(err);
+            logger.err(err);
         } 
-        console.log("Server is running at "+ constants.PORT);
-        console.log('Worker %d running!', cluster.worker.id)
+       logger.info(`Server Running on PORT ${constants.PORT}`)
     });
 }
 
