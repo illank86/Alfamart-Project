@@ -1,15 +1,22 @@
 import moment from 'moment';
+import bcrypt from 'bcrypt';
+import passport from 'passport';
+import jwt from 'jsonwebtoken';
+
 import db from '../../config/db';
 import constants from '../../config/constants';
 import logger from '../../config/logger';
+import passportConfig from '../../config/passport';
+
+passportConfig(passport);
 
 const dbQuery = {
 
     getAll(req, res) {
         db.query('SELECT * FROM store', function(err, result) {            
             if (err) {
-                logger.error('Internal Server Error');
-                res.status(500).send({"error": "Internal Server Error"})
+                logger.error(`Query getAll has an error: ${err}`);
+                res.status(500).send({"error": `${err}`})
             } else {
                 res.send(result); 
             }                       
@@ -19,7 +26,7 @@ const dbQuery = {
     getOne(req, res) {
         db.query('SELECT * FROM store WHERE id_store = ?', (req.params._id), function(err, result) {            
             if (err) {
-                res.status(500).send({"error": "Internal Server Error"})
+                res.status(500).send({"error": `${err}`})
             } else {
                 res.send(result);
             }
@@ -27,24 +34,30 @@ const dbQuery = {
     },
 
     addStore(req, res) {
-        let name = req.body.name;
-        let address = req.body.address;   
-        let topic = req.body.topic;     
-        db.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function(err, result) {
-            if (err) { 
-                logger.error(`Query addStore function has an error: ${err}`);               
-                res.status(500).send({ "error": `${err}`});
+        jwt.verify(req.token, process.env.JWT_SECRET_KEY,   function(err, authData) {
+            if(err) {
+                res.status(403).send({"error": `${err}`})
             } else {
-                constants.client.subscribe(`alfamart/status/${topic}/info`, { qos: 2 }, function(err, granted) {
-                    if(err) {
-                        logger.error(`Subsribed at addStore function has an error: ${err}`);
-                        res.send({"message": "Store data saved but cannot subscribed"}); 
-                    } else {                       
-                        res.send({"message": `Store data saved and subscribed to ${granted[0].topic}`});
-                    }
-                });                 
-            };
-        });
+                let name = req.body.name;
+                let address = req.body.address;   
+                let topic = req.body.topic;     
+                db.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function(err, result) {
+                    if (err) { 
+                        logger.error(`Query addStore function has an error: ${err}`);               
+                        res.status(500).send({ "error": `${err}`});
+                    } else {
+                        constants.client.subscribe(`alfamart/status/${topic}/info`, { qos: 2 }, function(err, granted) {
+                            if(err) {
+                                logger.error(`Subsribed at addStore function has an error: ${err}`);
+                                res.send({"message": "Store data saved but cannot subscribed"}); 
+                            } else {                       
+                                res.send({"message": `Store data saved and subscribed to ${granted[0].topic}`});
+                            }
+                        });                 
+                    };
+                });
+            }
+        })       
     },
 
 
@@ -99,7 +112,7 @@ const dbQuery = {
             db.query('INSERT INTO schedule (time_on, time_off, day, id_komponen, id_store) VALUES ?', [data] , function(err, result) {
                 if (err) {
                     logger.error(`Query addSchedule function has an error: ${err}`);
-                    res.status(500).send({"error": "Internal Server Error"})
+                    res.status(500).send({"error": `${err}`})
                 } else {
                     res.json({"message": "Schedule saved successfully"});
                     let i;
@@ -118,13 +131,13 @@ const dbQuery = {
         db.query('DELETE FROM store WHERE id_store = ?', (id), function(err, result) {
             if(err) {
                 logger.error(`Query deleteOne function has an error: ${err}`);
-                res.status(500).send({"error": "Cannot delete, Internal Server Error"})
+                res.status(500).send({"error": `Unable to delete, ${err}`});
             } else { 
                 dbQuery.unsubscribeMqtt(topic, function(msg) {
                     if(msg == 'error') {
-                        res.json({"message": "Store deleted but cannot unsubscribe"})
+                        res.json({"message": "Store deleted but failed to unsubscribe"})
                     } else {
-                        res.json({"message": `Deleted and unsubscribed from ${topic}`})
+                        res.json({"message": `Deleted and unsubscribed from ${topic} successfully`})
                     }
                 });   
             }
@@ -148,7 +161,7 @@ const dbQuery = {
                 logger.error(`Query getOneReport function has an error: ${err}`);
                 res.status(500).send({"error": `Cannot get report data, ${err}`});
             } else {
-                res.send(result);
+                res.json(result);
             }
         });
     },
@@ -176,20 +189,23 @@ const dbQuery = {
         let current_r = parseFloat(msg[3]);
         let current_s = parseFloat(msg[4]);
         let current_t = parseFloat(msg[5]); 
-        let current_sng = parseFloat(msg[6]); 
-        
-      
+        let current_sng = parseFloat(msg[6]);
+    
 
-        dbQuery.selectIdStore(topics, function(res) { 
-            let stores = res;                          
-            let query = `INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        if(isNaN(status_3phase) || isNaN(status_1phase) || isNaN(status_auto_manual) || isNaN(current_r) || isNaN(current_s) || isNaN(current_sng )) {
+            logger.error('one or more empty (NaN) field are sent by MQTT');
+        } else { 
+            dbQuery.selectIdStore(topics, function(res) { 
+                let stores = res;                          
+                let query = `INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-            db.query(query, [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function(err, result) {
-                if(err) {
-                    logger.error(`Query selectIdStore has an error: ${err}`);
-                }             
-            });
-        });  
+                db.query(query, [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function(err, result) {
+                    if(err) {
+                        logger.error(`Query selectIdStore has an error: ${err}`);
+                    }             
+                });
+            });  
+        }
     },
 
     sendMqtt(i, ton, toff, topic, komp) {        
@@ -351,6 +367,76 @@ const dbQuery = {
         }
        
     },
+
+    registerUsers(req, res, next) {       
+
+        req.checkBody('username', 'Username field cannot be empty.').notEmpty();
+        req.checkBody('username', 'Username must between 4-15 character long.').len(4, 15);
+        req.checkBody('name', 'Do you have a name ?, you should put your name on the name field').notEmpty()
+        req.checkBody('email', 'The email you entered is invalid, please try again.').isEmail();
+        req.checkBody('password', 'Password must between 4-15 character long.').len(4, 15);
+        req.checkBody('passwordMatch', 'Passwords do not match, please try again.').equals(req.body.password);
+
+        const errors = req.validationErrors();        
+
+        if(errors) {
+            res.status(500).send({"error": `${errors[0].msg}`});
+        } else {
+            passport.authenticate('local-signup', function(err, user, info) {
+                if (err) return next(err);
+                if(user) {
+                    res.json({"message": "Register Successfully"})
+                } else {     
+                    res.status(400).json({"error": `${req.flash(info).signupMessage[0]}`});
+                }
+            })(req, res, next);            
+        }
+    },
+
+    loginUser(req, res, next) {
+        req.checkBody('username', 'Username field cannot be empty.').notEmpty();
+        req.checkBody('password', 'Password field cannot be empty.').notEmpty();
+
+        const errors = req.validationErrors();  
+        
+        if(errors) {
+            res.status(500).send({"error": `${errors[0].msg}`});
+        } else {
+            passport.authenticate('local-login', function(err, user, info) {
+                if (err) return next(err);
+                if(user) {
+                    console.log(user)
+                    jwt.sign({user}, process.env.JWT_SECRET_KEY, function(err, token) {
+                        if(err) {
+                            res.status(400).json({"error": `${err}`});
+                        } else {
+                            res.json({"success": true, "message": "Login Success", "token": `${token}`})
+                        }
+                        
+                    });                    
+                } else {     
+                    res.status(400).json({"success": false, "error": `${req.flash(info).loginMessage[0]}`});
+                }
+            })(req, res, next);            
+        }
+
+    },
+
+    verifyToken(req, res, next) {
+        //Get header value
+        const secureHeader = req.headers['authorization'];
+
+        if(typeof secureHeader !== 'undefined') {
+            //split space
+            const security = secureHeader.split(' ');
+            const securityToken = security[1];
+
+            req.token = securityToken
+            next();
+        } else {
+            res.status(403).json({"error": "You're unauthorized"});
+        }
+    }
 
 }
 

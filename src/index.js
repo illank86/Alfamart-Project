@@ -1,5 +1,6 @@
 import cluster from 'cluster';
 import express from 'express';
+import {} from 'dotenv/config';
 
 import middleware from './config/middleware';
 
@@ -27,9 +28,7 @@ if(cluster.isMaster) {
 
     const app = express();
     middleware(app); 
-
     logger;
-    
     process.on('message',  function(msg) {
         dbQuery.subscribeOnStart();
     });

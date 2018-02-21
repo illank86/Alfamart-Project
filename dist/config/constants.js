@@ -16,15 +16,10 @@ var defaultConfig = {
     PORT: process.env.PORT || 8000
 };
 
-var config = {
-    DB_URL: process.env.DB_URL || '127.0.0.1',
-    DB_PASS: process.env.DB_PASSWORD || 'password'
-};
-//
 var options = {
     option: {
         port: 1883,
-        host: process.env.MQTT_URL || 'mqt://broker.hivemq.com',
+        host: process.env.MQTT_URL,
         clientId: 'mqttjs_' + Math.random().toString(16).substr(2, 8),
         // username: 'joywydem',
         // password: 'f1A0bkvykCrl',
@@ -41,7 +36,7 @@ var options = {
 };
 
 var conn = {
-    client: _mqtt2.default.connect(process.env.MQTT_URL || 'mqt://broker.hivemq.com', options.option)
+    client: _mqtt2.default.connect(process.env.MQTT_URL, options.option)
 };
 
-exports.default = _extends({}, defaultConfig, config, conn);
+exports.default = _extends({}, defaultConfig, conn);

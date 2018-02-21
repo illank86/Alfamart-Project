@@ -8,6 +8,8 @@ var _express = require('express');
 
 var _express2 = _interopRequireDefault(_express);
 
+require('dotenv/config');
+
 var _middleware = require('./config/middleware');
 
 var _middleware2 = _interopRequireDefault(_middleware);
@@ -47,9 +49,7 @@ if (_cluster2.default.isMaster) {
 
     var app = (0, _express2.default)();
     (0, _middleware2.default)(app);
-
     _logger2.default;
-
     process.on('message', function (msg) {
         _storeModel2.default.subscribeOnStart();
     });

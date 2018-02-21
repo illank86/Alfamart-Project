@@ -8,6 +8,18 @@ var _moment = require('moment');
 
 var _moment2 = _interopRequireDefault(_moment);
 
+var _bcrypt = require('bcrypt');
+
+var _bcrypt2 = _interopRequireDefault(_bcrypt);
+
+var _passport = require('passport');
+
+var _passport2 = _interopRequireDefault(_passport);
+
+var _jsonwebtoken = require('jsonwebtoken');
+
+var _jsonwebtoken2 = _interopRequireDefault(_jsonwebtoken);
+
 var _db = require('../../config/db');
 
 var _db2 = _interopRequireDefault(_db);
@@ -20,14 +32,20 @@ var _logger = require('../../config/logger');
 
 var _logger2 = _interopRequireDefault(_logger);
 
+var _passport3 = require('../../config/passport');
+
+var _passport4 = _interopRequireDefault(_passport3);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+(0, _passport4.default)(_passport2.default);
 
 var dbQuery = {
     getAll: function getAll(req, res) {
         _db2.default.query('SELECT * FROM store', function (err, result) {
             if (err) {
-                _logger2.default.error('Internal Server Error');
-                res.status(500).send({ "error": "Internal Server Error" });
+                _logger2.default.error('Query getAll has an error: ' + err);
+                res.status(500).send({ "error": '' + err });
             } else {
                 res.send(result);
             }
@@ -36,30 +54,36 @@ var dbQuery = {
     getOne: function getOne(req, res) {
         _db2.default.query('SELECT * FROM store WHERE id_store = ?', req.params._id, function (err, result) {
             if (err) {
-                res.status(500).send({ "error": "Internal Server Error" });
+                res.status(500).send({ "error": '' + err });
             } else {
                 res.send(result);
             }
         });
     },
     addStore: function addStore(req, res) {
-        var name = req.body.name;
-        var address = req.body.address;
-        var topic = req.body.topic;
-        _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
+        _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
             if (err) {
-                _logger2.default.error('Query addStore function has an error: ' + err);
-                res.status(500).send({ "error": '' + err });
+                res.status(403).send({ "error": '' + err });
             } else {
-                _constants2.default.client.subscribe('alfamart/status/' + topic + '/info', { qos: 2 }, function (err, granted) {
+                var name = req.body.name;
+                var address = req.body.address;
+                var topic = req.body.topic;
+                _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
                     if (err) {
-                        _logger2.default.error('Subsribed at addStore function has an error: ' + err);
-                        res.send({ "message": "Store data saved but cannot subscribed" });
+                        _logger2.default.error('Query addStore function has an error: ' + err);
+                        res.status(500).send({ "error": '' + err });
                     } else {
-                        res.send({ "message": 'Store data saved and subscribed to ' + granted[0].topic });
-                    }
+                        _constants2.default.client.subscribe('alfamart/status/' + topic + '/info', { qos: 2 }, function (err, granted) {
+                            if (err) {
+                                _logger2.default.error('Subsribed at addStore function has an error: ' + err);
+                                res.send({ "message": "Store data saved but cannot subscribed" });
+                            } else {
+                                res.send({ "message": 'Store data saved and subscribed to ' + granted[0].topic });
+                            }
+                        });
+                    };
                 });
-            };
+            }
         });
     },
     addSchedule: function addSchedule(req, res) {
@@ -97,7 +121,7 @@ var dbQuery = {
             _db2.default.query('INSERT INTO schedule (time_on, time_off, day, id_komponen, id_store) VALUES ?', [data], function (err, result) {
                 if (err) {
                     _logger2.default.error('Query addSchedule function has an error: ' + err);
-                    res.status(500).send({ "error": "Internal Server Error" });
+                    res.status(500).send({ "error": '' + err });
                 } else {
                     res.json({ "message": "Schedule saved successfully" });
                     var i = void 0;
@@ -114,13 +138,13 @@ var dbQuery = {
         _db2.default.query('DELETE FROM store WHERE id_store = ?', id, function (err, result) {
             if (err) {
                 _logger2.default.error('Query deleteOne function has an error: ' + err);
-                res.status(500).send({ "error": "Cannot delete, Internal Server Error" });
+                res.status(500).send({ "error": 'Unable to delete, ' + err });
             } else {
                 dbQuery.unsubscribeMqtt(topic, function (msg) {
                     if (msg == 'error') {
-                        res.json({ "message": "Store deleted but cannot unsubscribe" });
+                        res.json({ "message": "Store deleted but failed to unsubscribe" });
                     } else {
-                        res.json({ "message": 'Deleted and unsubscribed from ' + topic });
+                        res.json({ "message": 'Deleted and unsubscribed from ' + topic + ' successfully' });
                     }
                 });
             }
@@ -142,7 +166,7 @@ var dbQuery = {
                 _logger2.default.error('Query getOneReport function has an error: ' + err);
                 res.status(500).send({ "error": 'Cannot get report data, ' + err });
             } else {
-                res.send(result);
+                res.json(result);
             }
         });
     },
@@ -170,16 +194,20 @@ var dbQuery = {
         var current_t = parseFloat(msg[5]);
         var current_sng = parseFloat(msg[6]);
 
-        dbQuery.selectIdStore(topics, function (res) {
-            var stores = res;
-            var query = 'INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        if (isNaN(status_3phase) || isNaN(status_1phase) || isNaN(status_auto_manual) || isNaN(current_r) || isNaN(current_s) || isNaN(current_sng)) {
+            _logger2.default.error('one or more empty (NaN) field are sent by MQTT');
+        } else {
+            dbQuery.selectIdStore(topics, function (res) {
+                var stores = res;
+                var query = 'INSERT INTO report (timestamp, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, id_store) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
-            _db2.default.query(query, [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function (err, result) {
-                if (err) {
-                    _logger2.default.error('Query selectIdStore has an error: ' + err);
-                }
+                _db2.default.query(query, [timestamps, status_3phase, status_1phase, status_auto_manual, current_r, current_s, current_t, current_sng, topic, stores], function (err, result) {
+                    if (err) {
+                        _logger2.default.error('Query selectIdStore has an error: ' + err);
+                    }
+                });
             });
-        });
+        }
     },
     sendMqtt: function sendMqtt(i, ton, toff, topic, komp) {
         var arr_on = ton.split(':');
@@ -286,6 +314,71 @@ var dbQuery = {
                     }
                 }
             });
+        }
+    },
+    registerUsers: function registerUsers(req, res, next) {
+
+        req.checkBody('username', 'Username field cannot be empty.').notEmpty();
+        req.checkBody('username', 'Username must between 4-15 character long.').len(4, 15);
+        req.checkBody('name', 'Do you have a name ?, you should put your name on the name field').notEmpty();
+        req.checkBody('email', 'The email you entered is invalid, please try again.').isEmail();
+        req.checkBody('password', 'Password must between 4-15 character long.').len(4, 15);
+        req.checkBody('passwordMatch', 'Passwords do not match, please try again.').equals(req.body.password);
+
+        var errors = req.validationErrors();
+
+        if (errors) {
+            res.status(500).send({ "error": '' + errors[0].msg });
+        } else {
+            _passport2.default.authenticate('local-signup', function (err, user, info) {
+                if (err) return next(err);
+                if (user) {
+                    res.json({ "message": "Register Successfully" });
+                } else {
+                    res.status(400).json({ "error": '' + req.flash(info).signupMessage[0] });
+                }
+            })(req, res, next);
+        }
+    },
+    loginUser: function loginUser(req, res, next) {
+        req.checkBody('username', 'Username field cannot be empty.').notEmpty();
+        req.checkBody('password', 'Password field cannot be empty.').notEmpty();
+
+        var errors = req.validationErrors();
+
+        if (errors) {
+            res.status(500).send({ "error": '' + errors[0].msg });
+        } else {
+            _passport2.default.authenticate('local-login', function (err, user, info) {
+                if (err) return next(err);
+                if (user) {
+                    console.log(user);
+                    _jsonwebtoken2.default.sign({ user: user }, process.env.JWT_SECRET_KEY, function (err, token) {
+                        if (err) {
+                            res.status(400).json({ "error": '' + err });
+                        } else {
+                            res.json({ "success": true, "message": "Login Success", "token": '' + token });
+                        }
+                    });
+                } else {
+                    res.status(400).json({ "success": false, "error": '' + req.flash(info).loginMessage[0] });
+                }
+            })(req, res, next);
+        }
+    },
+    verifyToken: function verifyToken(req, res, next) {
+        //Get header value
+        var secureHeader = req.headers['authorization'];
+
+        if (typeof secureHeader !== 'undefined') {
+            //split space
+            var security = secureHeader.split(' ');
+            var securityToken = security[1];
+
+            req.token = securityToken;
+            next();
+        } else {
+            res.status(403).json({ "error": "You're unauthorized" });
         }
     }
 };
