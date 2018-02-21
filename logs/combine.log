@@ -891,3 +891,8 @@
 {"timestamp":"2018-02-21 15:11:29","message":"Server Running on PORT 8000","level":"info"}
 {"timestamp":"2018-02-21 15:11:29","message":"Server Running on PORT 8000","level":"info"}
 {"timestamp":"2018-02-21 15:11:30","message":"Subscribe to all topics: yes@test123,alfamart/status/null/info,alfamart/status/null/info,alfamart/status/null/info,alfamart/status/anu/info,alfamart/status/Illank/info","level":"info"}
+{"timestamp":"2018-02-21 15:11:42","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-21 15:11:42","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-21 15:11:42","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-21 15:11:42","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-21 15:11:43","message":"Subscribe to all topics: yes@test123,alfamart/status/null/info,alfamart/status/null/info,alfamart/status/null/info,alfamart/status/anu/info,alfamart/status/Illank/info","level":"info"}
