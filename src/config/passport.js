@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt';
 import LocalStrategy from 'passport-local';
-// const LocalStrategy   = require('passport-local').Strategy;
 
 import logger from './logger';
 import db from './db';
@@ -86,9 +85,5 @@ module.exports = function(passport) {
                 }
             });
 		});
-		
-
-
     }));
-
 };

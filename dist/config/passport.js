@@ -18,8 +18,6 @@ var _db2 = _interopRequireDefault(_db);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// const LocalStrategy   = require('passport-local').Strategy;
-
 module.exports = function (passport) {
 
     passport.serializeUser(function (user, done) {
