@@ -1004,3 +1004,12 @@
 {"timestamp":"2018-02-22 20:52:48","message":"Server Running on PORT 8000","level":"info"}
 {"timestamp":"2018-02-22 20:52:48","message":"Server Running on PORT 8000","level":"info"}
 {"timestamp":"2018-02-22 20:52:49","message":"Subscribe to all topics: yes@test123","level":"info"}
+{"timestamp":"2018-02-22 21:06:38","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-22 21:06:38","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-22 21:06:38","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-22 21:06:38","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-22 21:06:39","message":"Subscribe to all topics: yes@test123","level":"info"}
+{"timestamp":"2018-02-22 21:44:55","message":"Query addStore function has an error: Error: ER_DUP_ENTRY: Duplicate entry 'Shsjsk' for key 'topic_UNIQUE'","level":"error"}
+{"timestamp":"2018-02-22 21:45:02","message":"Query addStore function has an error: Error: ER_DUP_ENTRY: Duplicate entry 'Shsjsk' for key 'topic_UNIQUE'","level":"error"}
+{"timestamp":"2018-02-22 23:07:46","code":"ER_DUP_ENTRY","errno":1062,"sqlMessage":"Duplicate entry 'Hjjjjj@yahoo.com' for key 'email_UNIQUE'","sqlState":"23000","index":0,"sql":"INSERT INTO users ( username, password, email, name ) VALUES ('Dddss','$2a$10$FnOkj9y0nsofnUqov3M1EOrEkpTlin1edWi4EtTZXRXkx6c0FWDJ.','Hjjjjj@yahoo.com','Ejekek')","level":"error"}
+{"timestamp":"2018-02-22 23:09:51","code":"ER_DUP_ENTRY","errno":1062,"sqlMessage":"Duplicate entry 'Email@yahoo.com' for key 'email_UNIQUE'","sqlState":"23000","index":0,"sql":"INSERT INTO users ( username, password, email, name ) VALUES ('Hdjdjdj','$2a$10$2iG4vmrbXF7TmhjE3WnrHuK5UEiT7xXQd.TWDIKGYO0Q6OpfBdOR.','Email@yahoo.com','Ejekek')","level":"error"}
