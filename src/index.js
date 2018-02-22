@@ -9,29 +9,29 @@ import constants from './config/constants';
 import Routes from './modules/index';
 import dbQuery from './modules/store/store-model';
 
-// if(cluster.isMaster) {
+if(cluster.isMaster) {
 
-//     const cpuCount = require('os').cpus().length;
+    const cpuCount = require('os').cpus().length;
 
-//     for (let i = 0; i < cpuCount; i++) {
-//         var worker = cluster.fork(); 
+    for (let i = 0; i < cpuCount; i++) {
+        var worker = cluster.fork(); 
            
-//     };
+    };
 
-//     worker.send({RunSubs: 'Run Subs'}); 
-//     cluster.on('exit', function (worker) {
-//         // Replace the dead worker,
-//         worker;        
-//     });
+    worker.send({RunSubs: 'Run Subs'}); 
+    cluster.on('exit', function (worker) {
+        // Replace the dead worker,
+        worker;        
+    });
 
-// } else {  
+} else {  
 
     const app = express();
     middleware(app); 
     logger;
-    // process.on('message',  function(msg) {
-    dbQuery.subscribeOnStart();
-    // });
+    process.on('message',  function(msg) {
+        dbQuery.subscribeOnStart();
+    });
 
     app.use('/api', Routes);
     app.listen(constants.PORT, function(err) {
@@ -40,6 +40,6 @@ import dbQuery from './modules/store/store-model';
         } 
        logger.info(`Server Running on PORT ${constants.PORT}`)
     });
-// }
+}
 
 

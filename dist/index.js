@@ -32,35 +32,33 @@ var _storeModel2 = _interopRequireDefault(_storeModel);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// if(cluster.isMaster) {
+if (_cluster2.default.isMaster) {
 
-//     const cpuCount = require('os').cpus().length;
+    var cpuCount = require('os').cpus().length;
 
-//     for (let i = 0; i < cpuCount; i++) {
-//         var worker = cluster.fork(); 
+    for (var i = 0; i < cpuCount; i++) {
+        var worker = _cluster2.default.fork();
+    };
 
-//     };
+    worker.send({ RunSubs: 'Run Subs' });
+    _cluster2.default.on('exit', function (worker) {
+        // Replace the dead worker,
+        worker;
+    });
+} else {
 
-//     worker.send({RunSubs: 'Run Subs'}); 
-//     cluster.on('exit', function (worker) {
-//         // Replace the dead worker,
-//         worker;        
-//     });
+    var app = (0, _express2.default)();
+    (0, _middleware2.default)(app);
+    _logger2.default;
+    process.on('message', function (msg) {
+        _storeModel2.default.subscribeOnStart();
+    });
 
-// } else {  
-
-var app = (0, _express2.default)();
-(0, _middleware2.default)(app);
-_logger2.default;
-// process.on('message',  function(msg) {
-_storeModel2.default.subscribeOnStart();
-// });
-
-app.use('/api', _index2.default);
-app.listen(_constants2.default.PORT, function (err) {
-    if (err) {
-        _logger2.default.err(err);
-    }
-    _logger2.default.info('Server Running on PORT ' + _constants2.default.PORT);
-});
-// }
+    app.use('/api', _index2.default);
+    app.listen(_constants2.default.PORT, function (err) {
+        if (err) {
+            _logger2.default.err(err);
+        }
+        _logger2.default.info('Server Running on PORT ' + _constants2.default.PORT);
+    });
+}
