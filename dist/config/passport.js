@@ -80,7 +80,7 @@ module.exports = function (passport) {
         _db2.default.query("SELECT * FROM `users` WHERE `username` = ?", username, function (err, rows) {
             if (err) return done(err);
             if (!rows.length) {
-                return done(null, false, req.flash('loginMessage', 'No user found.')); // req.flash is the way to set flashdata using connect-flash
+                return done(null, false, req.flash('loginMessage', 'You\'re not in our database.'));
             }
 
             _bcrypt2.default.compare(password, rows[0].password, function (err, isMatch) {

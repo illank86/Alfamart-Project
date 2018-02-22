@@ -45,7 +45,7 @@ var dbQuery = {
         _db2.default.query('SELECT * FROM store', function (err, result) {
             if (err) {
                 _logger2.default.error('Query getAll has an error: ' + err);
-                res.status(500).send({ "error": '' + err });
+                res.status(400).send({ "error": '' + err });
             } else {
                 res.send(result);
             }
@@ -54,7 +54,7 @@ var dbQuery = {
     getOne: function getOne(req, res) {
         _db2.default.query('SELECT * FROM store WHERE id_store = ?', req.params._id, function (err, result) {
             if (err) {
-                res.status(500).send({ "error": '' + err });
+                res.status(400).send({ "error": '' + err });
             } else {
                 res.send(result);
             }
@@ -63,7 +63,7 @@ var dbQuery = {
     addStore: function addStore(req, res) {
         _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
             if (err) {
-                res.status(403).send({ "error": '' + err });
+                res.status(401).send({ "error": '' + err });
             } else {
                 var name = req.body.name;
                 var address = req.body.address;
@@ -71,7 +71,7 @@ var dbQuery = {
                 _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
                     if (err) {
                         _logger2.default.error('Query addStore function has an error: ' + err);
-                        res.status(500).send({ "error": '' + err });
+                        res.status(400).send({ "error": '' + err });
                     } else {
                         _constants2.default.client.subscribe('alfamart/status/' + topic + '/info', { qos: 2 }, function (err, granted) {
                             if (err) {
@@ -89,7 +89,7 @@ var dbQuery = {
     addSchedule: function addSchedule(req, res) {
         _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
             if (err) {
-                res.status(403).send({ "error": '' + err });
+                res.status(401).send({ "error": '' + err });
             } else {
                 var senin_on = req.body.senin.time_on;
                 var senin_off = req.body.senin.time_off;
@@ -125,7 +125,7 @@ var dbQuery = {
                     _db2.default.query('INSERT INTO schedule (time_on, time_off, day, id_komponen, id_store) VALUES ?', [data], function (err, result) {
                         if (err) {
                             _logger2.default.error('Query addSchedule function has an error: ' + err);
-                            res.status(500).send({ "error": '' + err });
+                            res.status(400).send({ "error": '' + err });
                         } else {
                             res.json({ "message": "Schedule saved successfully" });
                             var i = void 0;
@@ -141,14 +141,14 @@ var dbQuery = {
     deleteOne: function deleteOne(req, res) {
         _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
             if (err) {
-                res.status(403).send({ "error": '' + err });
+                res.status(401).send({ "error": '' + err });
             } else {
                 var id = req.params._id;
                 var topic = req.params.topic;
                 _db2.default.query('DELETE FROM store WHERE id_store = ?', id, function (err, result) {
                     if (err) {
                         _logger2.default.error('Query deleteOne function has an error: ' + err);
-                        res.status(500).send({ "error": 'Unable to delete, ' + err });
+                        res.status(400).send({ "error": 'Unable to delete, ' + err });
                     } else {
                         dbQuery.unsubscribeMqtt(topic, function (msg) {
                             if (msg == 'error') {
@@ -166,7 +166,7 @@ var dbQuery = {
         _db2.default.query('SELECT * FROM schedule WHERE id_store = ?', req.params._id, function (err, result) {
             if (err) {
                 _logger2.default.error('Query getOneStore function has an error: ' + err);
-                res.status(500).send({ "error": 'Cannot get store data, ' + err });
+                res.status(400).send({ "error": 'Cannot get store data, ' + err });
             } else {
                 res.send(result);
             }
@@ -176,7 +176,7 @@ var dbQuery = {
         _db2.default.query('SELECT * FROM report WHERE id_store = ? ORDER BY timestamp DESC LIMIT 1', req.params._id, function (err, result) {
             if (err) {
                 _logger2.default.error('Query getOneReport function has an error: ' + err);
-                res.status(500).send({ "error": 'Cannot get report data, ' + err });
+                res.status(400).send({ "error": 'Cannot get report data, ' + err });
             } else {
                 res.json(result);
             }
@@ -283,7 +283,7 @@ var dbQuery = {
     updateSchedule: function updateSchedule(req, res) {
         _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
             if (err) {
-                res.status(403).send({ "error": '' + err });
+                res.status(401).send({ "error": '' + err });
             } else {
                 var senin_on = req.body.senin.time_on;
                 var senin_off = req.body.senin.time_off;
@@ -321,7 +321,7 @@ var dbQuery = {
                     _db2.default.query(update_query, data, function (err, result) {
                         if (err) {
                             _logger2.default.error('Query updateSchedule function has an error: ' + err);
-                            res.status(500).send({ "error": 'Update failed, ' + err });
+                            res.status(400).send({ "error": 'Update failed, ' + err });
                         } else {
                             res.json({ "message": "Schedules updated successfully" });
                             var i = void 0;
@@ -346,12 +346,12 @@ var dbQuery = {
         var errors = req.validationErrors();
 
         if (errors) {
-            res.status(500).send({ "error": '' + errors[0].msg });
+            res.status(400).send({ "error": '' + errors[0].msg });
         } else {
             _passport2.default.authenticate('local-signup', function (err, user, info) {
                 if (err) return next(err);
                 if (user) {
-                    res.json({ "message": "Register Successfully" });
+                    res.json({ "message": "You are registered, please login" });
                 } else {
                     res.status(400).json({ "error": '' + req.flash(info).signupMessage[0] });
                 }
@@ -365,17 +365,16 @@ var dbQuery = {
         var errors = req.validationErrors();
 
         if (errors) {
-            res.status(500).send({ "error": '' + errors[0].msg });
+            res.status(400).send({ "error": '' + errors[0].msg });
         } else {
             _passport2.default.authenticate('local-login', function (err, user, info) {
                 if (err) return next(err);
                 if (user) {
-                    console.log(user);
                     _jsonwebtoken2.default.sign({ user: user }, process.env.JWT_SECRET_KEY, function (err, token) {
                         if (err) {
-                            res.status(400).json({ "error": '' + err });
+                            res.status(401).json({ "error": '' + err });
                         } else {
-                            res.json({ "success": true, "message": "Login Success", "token": '' + token });
+                            res.json({ "success": true, "message": "Login Success", "username": '' + user.username, "token": '' + token });
                         }
                     });
                 } else {
@@ -396,7 +395,7 @@ var dbQuery = {
             req.token = securityToken;
             next();
         } else {
-            res.status(403).json({ "error": "You're unauthorized" });
+            res.status(403).json({ "error": "You're unauthorized." });
         }
     }
 };
