@@ -342,7 +342,7 @@ var dbQuery = {
         req.checkBody('email', 'The email you entered is invalid, please try again.').isEmail();
         req.checkBody('password', 'Password must between 4-15 character long.').len(4, 15);
         req.checkBody('passwordMatch', 'Passwords do not match, please try again.').equals(req.body.password);
-
+        req.sanitize('email').normalizeEmail({ lowercase: true });
         var errors = req.validationErrors();
 
         if (errors) {
