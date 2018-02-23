@@ -34,30 +34,35 @@ const dbQuery = {
     },
 
     addStore(req, res) {
-        jwt.verify(req.token, process.env.JWT_SECRET_KEY, function(err, authData) {
-            if(err) {
-                res.status(401).send({"error": `${err}`})
-            } else {
-                let name = req.body.name;
-                let address = req.body.address;   
-                let topic = req.body.topic;     
-                db.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function(err, result) {
-                    if (err) { 
-                        logger.error(`Query addStore function has an error: ${err}`);               
-                        res.status(400).send({ "error": `${err}`});
-                    } else {
-                        constants.client.subscribe(`alfamart/status/${topic}/info`, { qos: 2 }, function(err, granted) {
-                            if(err) {
-                                logger.error(`Subsribed at addStore function has an error: ${err}`);
-                                res.send({"message": "Store data saved but cannot subscribed"}); 
-                            } else {                       
-                                res.send({"message": `Store data saved and subscribed to ${granted[0].topic}`});
-                            }
-                        });                 
-                    };
-                });
-            }
-        })       
+        let name = req.body.name;
+        let address = req.body.address;   
+        let topic = req.body.topic; 
+
+        if(name == '' || address == '' || topic == '') {
+            res.status(401).send({"error": "All field are rquired."});
+        } else {
+            jwt.verify(req.token, process.env.JWT_SECRET_KEY, function(err, authData) {
+                if(err) {
+                    res.status(401).send({"error": `${err}`});
+                } else {    
+                    db.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function(err, result) {
+                        if (err) { 
+                            logger.error(`Query addStore function has an error: ${err}`);               
+                            res.status(400).send({ "error": `${err}`});
+                        } else {
+                            constants.client.subscribe(`alfamart/status/${topic}/info`, { qos: 2 }, function(err, granted) {
+                                if(err) {
+                                    logger.error(`Subsribed at addStore function has an error: ${err}`);
+                                    res.send({"message": "Store data saved but cannot subscribed"}); 
+                                } else {                       
+                                    res.send({"message": `Store data saved and subscribed to ${granted[0].topic}`});
+                                }
+                            });                 
+                        };
+                    });
+                }
+            });
+        }
     },
 
 

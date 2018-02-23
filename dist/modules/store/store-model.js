@@ -61,30 +61,35 @@ var dbQuery = {
         });
     },
     addStore: function addStore(req, res) {
-        _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
-            if (err) {
-                res.status(401).send({ "error": '' + err });
-            } else {
-                var name = req.body.name;
-                var address = req.body.address;
-                var topic = req.body.topic;
-                _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
-                    if (err) {
-                        _logger2.default.error('Query addStore function has an error: ' + err);
-                        res.status(400).send({ "error": '' + err });
-                    } else {
-                        _constants2.default.client.subscribe('alfamart/status/' + topic + '/info', { qos: 2 }, function (err, granted) {
-                            if (err) {
-                                _logger2.default.error('Subsribed at addStore function has an error: ' + err);
-                                res.send({ "message": "Store data saved but cannot subscribed" });
-                            } else {
-                                res.send({ "message": 'Store data saved and subscribed to ' + granted[0].topic });
-                            }
-                        });
-                    };
-                });
-            }
-        });
+        var name = req.body.name;
+        var address = req.body.address;
+        var topic = req.body.topic;
+
+        if (name == '' || address == '' || topic == '') {
+            res.status(401).send({ "error": "All field are rquired." });
+        } else {
+            _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
+                if (err) {
+                    res.status(401).send({ "error": '' + err });
+                } else {
+                    _db2.default.query('INSERT INTO store (name, address, topic) VALUES (?, ?, ?)', [name, address, topic], function (err, result) {
+                        if (err) {
+                            _logger2.default.error('Query addStore function has an error: ' + err);
+                            res.status(400).send({ "error": '' + err });
+                        } else {
+                            _constants2.default.client.subscribe('alfamart/status/' + topic + '/info', { qos: 2 }, function (err, granted) {
+                                if (err) {
+                                    _logger2.default.error('Subsribed at addStore function has an error: ' + err);
+                                    res.send({ "message": "Store data saved but cannot subscribed" });
+                                } else {
+                                    res.send({ "message": 'Store data saved and subscribed to ' + granted[0].topic });
+                                }
+                            });
+                        };
+                    });
+                }
+            });
+        }
     },
     addSchedule: function addSchedule(req, res) {
         _jsonwebtoken2.default.verify(req.token, process.env.JWT_SECRET_KEY, function (err, authData) {
