@@ -10,3 +10,13 @@
 {"timestamp":"2018-02-23 00:41:59","message":"Server Running on PORT 8000","level":"info"}
 {"timestamp":"2018-02-23 00:41:59","message":"Server Running on PORT 8000","level":"info"}
 {"timestamp":"2018-02-23 00:41:59","message":"Subscribe to all topics: yes@test123","level":"info"}
+{"timestamp":"2018-02-23 09:14:05","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:14:05","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:14:05","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:14:05","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:14:15","message":"Query queryAllMqtt has an error: Error: Handshake inactivity timeout","level":"error"}
+{"timestamp":"2018-02-23 09:19:30","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:19:30","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:19:30","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:19:31","message":"Server Running on PORT 8000","level":"info"}
+{"timestamp":"2018-02-23 09:19:31","message":"Subscribe to all topics: yes@test123","level":"info"}
